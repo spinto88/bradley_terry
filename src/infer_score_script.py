@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     ans = {"results": infered_score, "metadata": {"date_of_creation": str(datetime.today())}}
 
-    with open("../data/infered_score.json", "w") as fp:
+    with open("../docs/data/infered_score.json", "w") as fp:
         fp.write(json.dumps(ans))
 
 
