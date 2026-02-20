@@ -2,6 +2,12 @@ import json
 import numpy as np
 from scipy.optimize import minimize
 from datetime import datetime
+from pathlib import Path
+import json
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "results.json"
+OUTPUT_PATH = BASE_DIR / "docs" / "data" / "infered_score.json"
 
 def log_likelihood(scores, matches):
     ll = 0.0
@@ -63,13 +69,13 @@ def infer_score(list_of_matches):
 
 if __name__ == "__main__":
 
-    list_of_matches = json.load(open("../data/results.json","r"))
+    list_of_matches = json.load(open(DATA_PATH,"r"))
 
     infered_score = infer_score(list_of_matches)
 
     ans = {"results": infered_score, "metadata": {"date_of_creation": str(datetime.today())}}
 
-    with open("../docs/data/infered_score.json", "w") as fp:
+    with open(OUTPUT_PATH, "w") as fp:
         fp.write(json.dumps(ans))
 
 
