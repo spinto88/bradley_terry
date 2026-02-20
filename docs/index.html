@@ -1,8 +1,80 @@
 <!DOCTYPE html>
 <html>
-<head></head>
+<head>
+  <meta charset="utf-8">
+  <title>Team Scores</title>
+
+  <!-- Plotly CDN -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    #chart {
+      width: 100%;
+      height: 600px;
+    }
+  </style>
+</head>
 <body>
-	Hola
+
+<h1>Inferred Team Scores</h1>
+<p id="meta"></p>
+
+<div id="chart"></div>
+
+<script>
+
+fetch("../data/infered_score.json")
+  .then(response => response.json())
+  .then(data => {
+
+    // Extraer resultados
+    let results = data.results;
+
+    // Ordenar de mayor a menor score
+    results.sort((a, b) => b.score - a.score);
+
+    // Separar en arrays
+    const teams = results.map(d => d.team);
+    const scores = results.map(d => d.score);
+
+    // Mostrar metadata
+    if (data.metadata) {
+      document.getElementById("meta").innerText =
+        "Model: " + data.metadata.model +
+        " | Date: " + data.metadata.date;
+    }
+
+    const trace = {
+      x: teams,
+      y: scores,
+      type: "bar"
+    };
+
+    const layout = {
+      title: "Team Ranking",
+      xaxis: {
+        title: "Team"
+      },
+      yaxis: {
+        title: "Score"
+      }
+    };
+
+    Plotly.newPlot("chart", [trace], layout);
+
+  })
+  .catch(error => {
+    console.error("Error loading JSON:", error);
+  });
+
+</script>
+
 </body>
 </html>
-
