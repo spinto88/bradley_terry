@@ -45,7 +45,9 @@ fetch("data/infered_score.json")
     const scores = results.map(d => d.score);
 
     // offset
-    scores = scores.map(s => s - scores[scores.length - 1]);
+    const offset = scores[scores.length - 1];
+    const scores_rescaled = scores.map(s => s - offset);
+
 
     // Mostrar metadata
     if (data.metadata) {
@@ -56,7 +58,7 @@ fetch("data/infered_score.json")
 
     const trace = {
       x: teams,
-      y: scores,
+      y: scores_rescaled,
       type: "bar"
     };
 
