@@ -44,11 +44,14 @@ fetch("data/infered_score.json")
     const teams = results.map(d => d.team);
     const scores = results.map(d => d.score);
 
+    // offset
+    scores = scores.map(s => s + scores[scores.length - 1]);
+
     // Mostrar metadata
     if (data.metadata) {
       document.getElementById("meta").innerText =
         "Model: " + data.metadata.model +
-        " | Date: " + data.metadata.date;
+        " | Date: " + data.metadata.date_of_creation;
     }
 
     const trace = {
