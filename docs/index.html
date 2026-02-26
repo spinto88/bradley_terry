@@ -11,13 +11,9 @@
     body {
       font-family: Arial, sans-serif;
       max-width: 900px;
+      max-height: 600px;
       margin: auto;
       padding: 20px;
-    }
-
-    #chart {
-      width: 100%;
-      height: 600px;
     }
   </style>
 </head>
@@ -62,19 +58,32 @@ fetch("data/infered_score.json")
       type: "bar"
     };
 
-    const layout = {
-      title: "Team Ranking",
-      xaxis: {
-        title: "Team"
-      },
-      yaxis: {
-        title: "Score"
-      }
-    };
+const layout = {
+  title: "Team Ranking",
+  height: 600,
 
-    Plotly.newPlot("chart", [trace], layout);
+  margin: {
+    l: 60,
+    r: 30,
+    t: 60,
+    b: 140   // 👈 más espacio abajo
+  },
 
-  })
+  xaxis: {
+    title: "Team",
+    tickangle: -60,   // 👈 rota etiquetas
+    automargin: true  // 👈 ajusta automáticamente
+  },
+
+  yaxis: {
+    title: "Score",
+    automargin: true
+  }
+};
+
+	Plotly.newPlot("chart", [trace], layout, { responsive: true });
+
+})
   .catch(error => {
     console.error("Error loading JSON:", error);
   });
