@@ -38,4 +38,4 @@ jobs:
           git config user.email github-actions@github.com
           git add docs/data/infered_score.json
           git commit -m "Auto-update visualization data" || echo "No changes"
-          git push
+          git push origin HEAD:main

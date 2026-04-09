@@ -1,93 +1,278 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Team Scores</title>
-
-  <!-- Plotly CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Torneo Argentino – Ranking Bradley-Terry</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
-      max-width: 900px;
-      max-height: 600px;
+      max-width: 1000px;
       margin: auto;
-      padding: 20px;
+      padding: 24px 20px 48px;
+      color: #222;
+      background: #f7f8fa;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+    }
+
+    .meta {
+      font-size: 0.82rem;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #d0d4dc;
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      padding: 9px 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #555;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      border-radius: 4px 4px 0 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn:hover { color: #1a56db; }
+
+    .tab-btn.active {
+      color: #1a56db;
+      font-weight: bold;
+      border-bottom-color: #1a56db;
+      background: #fff;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Explicación ── */
+    .explicacion {
+      background: #fff;
+      border-left: 4px solid #1a56db;
+      border-radius: 4px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.91rem;
+      line-height: 1.65;
+      color: #333;
+    }
+
+    .explicacion h2 {
+      font-size: 1.05rem;
+      margin: 0 0 8px;
+      color: #1a3a7a;
+    }
+
+    .explicacion p { margin: 6px 0 0; }
+
+    /* ── Gráficos ── */
+    .chart-box {
+      background: #fff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #333;
+      margin: 0 0 8px 4px;
+    }
+
+    .chart-div {
+      height: 480px;
     }
   </style>
 </head>
 <body>
 
-<h1>Inferred Team Scores</h1>
-<p id="meta"></p>
+<h1>Torneo Apertura 2026 – Ranking Bradley-Terry</h1>
+<p class="meta" id="meta">Cargando datos…</p>
 
-<div id="chart"></div>
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('basico', this)">Modelo sin localía</button>
+  <button class="tab-btn"        onclick="showTab('localia', this)">Modelo con localía</button>
+</div>
+
+<!-- ── Panel: Modelo básico ── -->
+<div class="tab-panel active" id="tab-basico">
+
+  <div class="explicacion">
+    <h2>¿Qué es el modelo de Bradley-Terry?</h2>
+    <p>
+      El modelo de <strong>Bradley-Terry</strong> asigna un <em>score</em> a cada equipo que
+      representa su fortaleza relativa. A partir de los resultados observados (victorias, empates
+      y derrotas), se estima el score de cada equipo maximizando la probabilidad de haber
+      obtenido exactamente esos resultados.
+    </p>
+    <p>
+      Dados dos equipos <em>i</em> y <em>j</em> con scores sᵢ y sⱼ, las probabilidades de cada
+      resultado son:
+    </p>
+    <p style="padding-left:12px; font-family:monospace;">
+      P(gana i)  = exp(sᵢ) / Z<br>
+      P(empate)  = exp(½(sᵢ+sⱼ)) / Z<br>
+      P(gana j)  = exp(sⱼ) / Z
+    </p>
+    <p>
+      donde Z = exp(sᵢ) + exp(sⱼ) + exp(½(sᵢ+sⱼ)).
+      Los scores se muestran <strong>reescalados</strong> restando el mínimo, por lo que el
+      peor equipo queda en 0 y todos los demás indican cuánto mejor son en escala relativa.
+      En este modelo se ignora si el partido fue de local o visitante.
+    </p>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">Ranking por fuerza estimada</div>
+    <div id="chart-basico" class="chart-div"></div>
+  </div>
+
+</div>
+
+<!-- ── Panel: Modelo con localía ── -->
+<div class="tab-panel" id="tab-localia">
+
+  <div class="explicacion">
+    <h2>Modelo con ventaja de local</h2>
+    <p>
+      Esta versión extendida le asigna a cada equipo <em>dos parámetros</em>: el
+      <strong>score intrínseco</strong> (fuerza base) y la <strong>ventaja de local</strong>
+      (cuánto mejora su score al jugar en su cancha).
+    </p>
+    <p>
+      Cuando el equipo <em>i</em> juega de local contra <em>j</em>, el score efectivo de
+      <em>i</em> pasa a ser sᵢ + hᵢ, mientras que el de <em>j</em> sigue siendo sⱼ.
+      El parámetro hᵢ puede ser <em>positivo</em> (le favorece jugar de local) o
+      <em>negativo</em> (rinde mejor de visitante).
+    </p>
+    <p>
+      Ambos parámetros se estiman conjuntamente mediante máxima verosimilitud con regularización
+      gaussiana (prior Ridge con σ = 1), lo que evita sobreajuste cuando un equipo tiene pocos
+      partidos.
+    </p>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">Fuerza intrínseca (score base)</div>
+    <div id="chart-score-home" class="chart-div"></div>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">Ventaja de local (h_home)</div>
+    <div id="chart-h-home" class="chart-div"></div>
+  </div>
+
+</div>
 
 <script>
-
-fetch("data/infered_score.json")
-  .then(response => response.json())
-  .then(data => {
-
-    // Extraer resultados
-    let results = data.results;
-
-    // Ordenar de mayor a menor score
-    results.sort((a, b) => b.score - a.score);
-
-    // Separar en arrays
-    const teams = results.map(d => d.team);
-    const scores = results.map(d => d.score);
-
-    // offset
-    const offset = scores[scores.length - 1];
-    const scores_rescaled = scores.map(s => s - offset);
-
-
-    // Mostrar metadata
-    if (data.metadata) {
-      document.getElementById("meta").innerText =
-        "Model: " + data.metadata.model +
-        " | Date: " + data.metadata["date_of_creation"];
-    }
-
-    const trace = {
-      x: teams,
-      y: scores_rescaled,
-      type: "bar"
-    };
-
-const layout = {
-  title: "Team Ranking",
-  height: 600,
-
-  margin: {
-    l: 60,
-    r: 30,
-    t: 60,
-    b: 140   // 👈 más espacio abajo
-  },
-
-  xaxis: {
-    title: "Team",
-    tickangle: -60,   // 👈 rota etiquetas
-    automargin: true  // 👈 ajusta automáticamente
-  },
-
-  yaxis: {
-    title: "Score",
-    automargin: true
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    window.dispatchEvent(new Event('resize'));
   }
-};
 
-	Plotly.newPlot("chart", [trace], layout, { responsive: true });
+  const BLUE   = '#1a56db';
+  const ORANGE = '#e07020';
+  const GREEN  = '#1a9650';
+  const RED    = '#d62728';
 
-})
-  .catch(error => {
-    console.error("Error loading JSON:", error);
-  });
+  const LAYOUT_BASE = {
+    height: 480,
+    margin: { l: 55, r: 20, t: 30, b: 140 },
+    xaxis: { tickangle: -55, automargin: true },
+    yaxis: { automargin: true },
+    paper_bgcolor: '#fff',
+    plot_bgcolor:  '#fff',
+    font: { family: 'Arial, sans-serif', size: 12 }
+  };
 
+  fetch("data/infered_score.json")
+    .then(r => r.json())
+    .then(data => {
+
+      // Metadata
+      if (data.metadata) {
+        const d = new Date(data.metadata.date_of_creation);
+        document.getElementById("meta").innerText =
+          "Última actualización: " + d.toLocaleString("es-AR");
+      }
+
+      // ── Gráfico 1: Modelo básico ─────────────────────────────────────────
+      const basic = [...data.results].sort((a, b) => b.score - a.score);
+      const offset = basic[basic.length - 1].score;
+
+      Plotly.newPlot("chart-basico", [{
+        x: basic.map(d => d.team),
+        y: basic.map(d => d.score - offset),
+        type: "bar",
+        marker: { color: BLUE },
+        hovertemplate: "<b>%{x}</b><br>Score: %{y:.3f}<extra></extra>"
+      }], {
+        ...LAYOUT_BASE,
+        yaxis: { ...LAYOUT_BASE.yaxis, title: "Score (reescalado)" }
+      }, { responsive: true });
+
+      // ── Gráficos 2 y 3: Modelo con localía ───────────────────────────────
+      const home = [...data.results_home].sort((a, b) => b.score - a.score);
+      const teams_h  = home.map(d => d.team);
+      const scores_h = home.map(d => d.score);
+      const h_home   = home.map(d => d.h_home);
+
+      // Gráfico score base
+      const offset_h = scores_h[scores_h.length - 1];
+      Plotly.newPlot("chart-score-home", [{
+        x: teams_h,
+        y: scores_h.map(s => s - offset_h),
+        type: "bar",
+        marker: { color: BLUE },
+        hovertemplate: "<b>%{x}</b><br>Score base: %{y:.3f}<extra></extra>"
+      }], {
+        ...LAYOUT_BASE,
+        yaxis: { ...LAYOUT_BASE.yaxis, title: "Score base (reescalado)" }
+      }, { responsive: true });
+
+      // Gráfico ventaja de local – ordenado por h_home desc
+      const home_sorted = [...data.results_home].sort((a, b) => b.h_home - a.h_home);
+      const colors_h = home_sorted.map(d => d.h_home >= 0 ? GREEN : RED);
+
+      Plotly.newPlot("chart-h-home", [{
+        x: home_sorted.map(d => d.team),
+        y: home_sorted.map(d => d.h_home),
+        type: "bar",
+        marker: { color: colors_h },
+        hovertemplate: "<b>%{x}</b><br>Ventaja de local: %{y:.3f}<extra></extra>"
+      }], {
+        ...LAYOUT_BASE,
+        yaxis: { ...LAYOUT_BASE.yaxis, title: "h_home", zeroline: true, zerolinewidth: 1.5 }
+      }, { responsive: true });
+
+    })
+    .catch(err => {
+      console.error("Error cargando datos:", err);
+      document.getElementById("meta").innerText = "Error al cargar los datos.";
+    });
 </script>
 
 </body>
