@@ -55,14 +55,17 @@ def log_posterior_home(theta, matches, N, sigma=1.0):
             ll += np.log(b / Z)
         else:
             ll += np.log(c / Z)
-    prior = -0.5 * np.sum(theta ** 2) / sigma ** 2
+    prior = -0.5 * np.sum(s ** 2) / sigma ** 2
+    prior += -np.sum(h)
     return ll + prior
 
 
 def fit_home(matches, N, sigma=1.0):
     def objective(x):
         return -log_posterior_home(x, matches, N, sigma)
-    res = minimize(objective, np.zeros(2 * N), method="L-BFGS-B")
+    bounds = [(None, None)] * N + [(0.0, None)] * N  # s libre, h >= 0
+    x0 = np.concatenate([np.zeros(N), np.full(N, 1.00)])
+    res = minimize(objective, x0, method="L-BFGS-B", bounds=bounds)
     return res.x
 
 
