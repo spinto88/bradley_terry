@@ -101,6 +101,12 @@
     .chart-div {
       height: 480px;
     }
+
+    @media (max-width: 600px) {
+      body { padding: 12px 10px 32px; }
+      .chart-div { height: 320px; }
+      .tab-btn { padding: 8px 12px; font-size: 0.85rem; }
+    }
   </style>
 </head>
 <body>
@@ -201,7 +207,7 @@
   const LAYOUT_BASE = {
     height: 480,
     margin: { l: 55, r: 20, t: 30, b: 140 },
-    xaxis: { tickangle: -55, automargin: true },
+    xaxis: { tickangle: 90, automargin: true },
     yaxis: { automargin: true },
     paper_bgcolor: '#fff',
     plot_bgcolor:  '#fff',
