@@ -155,20 +155,20 @@
   <div class="explicacion">
     <h2>Modelo con ventaja de local</h2>
     <p>
-      Esta versión extendida le asigna a cada equipo <em>dos parámetros</em>: el
-      <strong>score intrínseco</strong> (fuerza base) y la <strong>ventaja de local</strong>
-      (cuánto mejora su score al jugar en su cancha).
+      Esta versión extendida asigna a cada equipo <em>dos parámetros</em>: el
+      <strong>score intrínseco</strong> sᵢ (fuerza base) y la <strong>ventaja de local</strong>
+      hᵢ (cuánto mejora su score al jugar en su cancha).
     </p>
     <p>
       Cuando el equipo <em>i</em> juega de local contra <em>j</em>, el score efectivo de
       <em>i</em> pasa a ser sᵢ + hᵢ, mientras que el de <em>j</em> sigue siendo sⱼ.
-      El parámetro hᵢ puede ser <em>positivo</em> (le favorece jugar de local) o
-      <em>negativo</em> (rinde mejor de visitante).
+      Las probabilidades de cada resultado se calculan igual que en el modelo básico,
+      reemplazando sᵢ por sᵢ + hᵢ en las fórmulas.
     </p>
     <p>
-      Ambos parámetros se estiman conjuntamente mediante máxima verosimilitud con regularización
-      gaussiana (prior Ridge con σ = 1), lo que evita sobreajuste cuando un equipo tiene pocos
-      partidos.
+      Ambos parámetros se estiman conjuntamente mediante máxima verosimilitud con regularización:
+      prior gaussiano (σ = 1) para los scores sᵢ, y prior exponencial (λ = 1) para las
+      ventajas de local hᵢ, lo que asegura que hᵢ ≥ 0.
     </p>
   </div>
 
@@ -178,7 +178,7 @@
   </div>
 
   <div class="chart-box">
-    <div class="chart-title">Ventaja de local (h_home)</div>
+    <div class="chart-title">Ventaja de local (hᵢ)</div>
     <div id="chart-h-home" class="chart-div"></div>
   </div>
 
@@ -265,7 +265,7 @@
         hovertemplate: "<b>%{x}</b><br>Ventaja de local: %{y:.3f}<extra></extra>"
       }], {
         ...LAYOUT_BASE,
-        yaxis: { ...LAYOUT_BASE.yaxis, title: "h_home", zeroline: true, zerolinewidth: 1.5 }
+        yaxis: { ...LAYOUT_BASE.yaxis, title: "hᵢ", zeroline: true, zerolinewidth: 1.5 }
       }, { responsive: true });
 
     })
