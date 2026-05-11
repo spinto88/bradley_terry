@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 URL = "https://www.ligaprofesional.ar/torneo-apertura-2026/"
 OUTPUT_PATH = "../data/results.json"
-N_FECHAS = 16
+N_FECHAS = 20
 
 
 def get_page_source(url):
@@ -39,7 +39,7 @@ def parse_results(html_content, n_fechas):
     for fecha in range(n_fechas):
         try:
             results = pd.read_html(str(tables[fecha]))[0]
-            results = results[results[0] == "TC"].copy()
+            results = results[results[0].isin(["TC", "TE", "PEN", "TE+P"])].copy()
             results.dropna(axis=1, how="all", inplace=True)
             results.rename(
                 columns={1: "local", 2: "goles_local", 4: "goles_visitante", 5: "visitante"},
