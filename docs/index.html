@@ -533,7 +533,7 @@
       data.results.forEach(d => { scoreMap[d.team] = d.score; });
       const selLocal  = document.getElementById("sel-local");
       const selVisita = document.getElementById("sel-visita");
-      teams.forEach((t, i) => {
+      [...teams].reverse().forEach(t => {
         selLocal.add(new Option(t, t));
         selVisita.add(new Option(t, t));
       });
