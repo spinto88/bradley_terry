@@ -157,24 +157,17 @@
     }
 
     .prob-bars {
-      display: flex;
-      gap: 12px;
-      align-items: stretch;
-    }
-
-    .prob-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto 160px auto;
+      column-gap: 12px;
+      row-gap: 6px;
     }
 
     .prob-label {
       font-size: 0.82rem;
       color: #555;
       text-align: center;
-      min-height: 2.4em;
       display: flex;
       align-items: flex-end;
       justify-content: center;
@@ -182,7 +175,6 @@
 
     .prob-bar-wrap {
       width: 100%;
-      height: 160px;
       position: relative;
       border-bottom: 2px solid #d0d4dc;
     }
@@ -202,11 +194,12 @@
       font-size: 1.05rem;
       font-weight: bold;
       color: #222;
+      text-align: center;
     }
 
     @media (max-width: 600px) {
       body { padding: 12px 10px 32px; }
-      .chart-div { height: 360px; }
+      .chart-div { height: 600px; }
       .tab-btn { padding: 8px 12px; font-size: 0.85rem; }
       .selector-row { flex-direction: column; align-items: flex-start; }
       .prob-bar { width: 90%; }
@@ -331,27 +324,21 @@
       El modelo no distingue quién juega de local y quién de visitante.
     </p>
     <div class="prob-bars">
-      <div class="prob-col">
-        <div class="prob-label" id="lbl-local">—</div>
-        <div class="prob-bar-wrap">
-          <div class="prob-bar" id="bar-local" style="background:#1a56db; height:0;"></div>
-        </div>
-        <div class="prob-pct" id="pct-local">—</div>
+      <div class="prob-label" id="lbl-local">—</div>
+      <div class="prob-label">Empate</div>
+      <div class="prob-label" id="lbl-visita">—</div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar" id="bar-local" style="background:#1a56db; height:0;"></div>
       </div>
-      <div class="prob-col">
-        <div class="prob-label">Empate</div>
-        <div class="prob-bar-wrap">
-          <div class="prob-bar" id="bar-empate" style="background:#aab0c0; height:0;"></div>
-        </div>
-        <div class="prob-pct" id="pct-empate">—</div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar" id="bar-empate" style="background:#aab0c0; height:0;"></div>
       </div>
-      <div class="prob-col">
-        <div class="prob-label" id="lbl-visita">—</div>
-        <div class="prob-bar-wrap">
-          <div class="prob-bar" id="bar-visita" style="background:#e07020; height:0;"></div>
-        </div>
-        <div class="prob-pct" id="pct-visita">—</div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar" id="bar-visita" style="background:#e07020; height:0;"></div>
       </div>
+      <div class="prob-pct" id="pct-local">—</div>
+      <div class="prob-pct" id="pct-empate">—</div>
+      <div class="prob-pct" id="pct-visita">—</div>
     </div>
     <div id="historial" style="margin-top:18px; font-size:0.88rem; color:#444;"></div>
   </div>
@@ -540,7 +527,7 @@
         paper_bgcolor: "#fff",
         plot_bgcolor: "#fff",
         showlegend: false
-      }, { responsive: true });
+      }, { responsive: true, staticPlot: true });
 
       // ── Simulador ────────────────────────────────────────────────────────
       data.results.forEach(d => { scoreMap[d.team] = d.score; });
@@ -560,6 +547,10 @@
     document.getElementById("meta").innerText = "Error al cargar los datos.";
   });
 </script>
+
+<footer style="margin-top: 48px; padding-top: 16px; border-top: 1px solid #d0d4dc; text-align: center; font-size: 0.85rem; color: #888;">
+  Autor: Sebastián Pinto &mdash; <a href="mailto:seba.pinto.1988@gmail.com" style="color: #888;">seba.pinto.1988@gmail.com</a>
+</footer>
 
 </body>
 </html>
