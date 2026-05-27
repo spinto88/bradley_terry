@@ -7,6 +7,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "results.json"
 OUTPUT_PATH = BASE_DIR / "docs" / "data" / "infered_score.json"
+RESULTS_COPY_PATH = BASE_DIR / "docs" / "data" / "results.json"
 
 
 # ── Modelo básico (sin localía) ──────────────────────────────────────────────
@@ -119,5 +120,8 @@ if __name__ == "__main__":
 
     with open(OUTPUT_PATH, "w") as fp:
         fp.write(json.dumps(output))
+
+    import shutil
+    shutil.copy(DATA_PATH, RESULTS_COPY_PATH)
 
     print(f"Done. {len(results_basic)} equipos procesados.")
