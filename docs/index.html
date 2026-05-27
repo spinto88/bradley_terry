@@ -106,7 +106,7 @@
     }
 
     .chart-div {
-      height: 540px;
+      height: 750px;
     }
 
     /* ── Simulador ── */
@@ -183,9 +183,8 @@
     .prob-bar-wrap {
       width: 100%;
       height: 160px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
+      position: relative;
+      border-bottom: 2px solid #d0d4dc;
     }
 
     .prob-bar {
@@ -193,6 +192,10 @@
       border-radius: 4px 4px 0 0;
       transition: height 0.35s ease;
       min-height: 2px;
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     .prob-pct {
@@ -203,7 +206,7 @@
 
     @media (max-width: 600px) {
       body { padding: 12px 10px 32px; }
-      .chart-div { height: 320px; }
+      .chart-div { height: 360px; }
       .tab-btn { padding: 8px 12px; font-size: 0.85rem; }
       .selector-row { flex-direction: column; align-items: flex-start; }
       .prob-bar { width: 90%; }
@@ -438,10 +441,6 @@
   const BLUE = '#1a56db';
 
   const LAYOUT_BASE = {
-    height: 540,
-    margin: { l: 70, r: 20, t: 20, b: 160 },
-    xaxis: { tickangle: 90, automargin: true, ticklabelstandoff: 8, tickfont: { size: 15 } },
-    yaxis: { automargin: true, titlefont: { size: 15 }, tickfont: { size: 14 } },
     paper_bgcolor: '#fff',
     plot_bgcolor:  '#fff',
     font: { family: 'Arial, sans-serif', size: 14 }
@@ -505,28 +504,46 @@
   ]).then(([data, matches]) => {
     matchData = matches;
 
-      // ── Gráfico: Modelo básico ────────────────────────────────────────────
-      const basic = [...data.results].sort((a, b) => b.score - a.score);
-      const offset = basic[basic.length - 1].score;
-
-      const tickLabels = basic.map(d => d.team === "Belgrano" ? "<b>Belgrano</b>" : d.team);
+      // ── Gráfico: Área rellena horizontal (mayor score arriba) ────────────
+      const basic = [...data.results].sort((a, b) => a.score - b.score);
+      const offset = basic[0].score;
+      const teams  = basic.map(d => d.team);
+      const scores = basic.map(d => d.score - offset);
 
       Plotly.newPlot("chart-basico", [{
-        x: basic.map(d => d.team),
-        y: basic.map(d => d.score - offset),
-        type: "bar",
-        marker: { color: BLUE },
-        hovertemplate: "<b>%{x}</b><br>Score: %{y:.3f}<extra></extra>"
+        y: teams,
+        x: scores,
+        type: "scatter",
+        mode: "lines+markers",
+        fill: "tozerox",
+        fillcolor: "rgba(26, 86, 219, 0.18)",
+        line: { color: BLUE, width: 2.5, shape: "linear" },
+        marker: { size: 8, color: BLUE },
+        hovertemplate: "<b>%{y}</b><br>Score: %{x:.3f}<extra></extra>"
       }], {
         ...LAYOUT_BASE,
-        xaxis: { ...LAYOUT_BASE.xaxis, tickmode: "array", tickvals: basic.map(d => d.team), ticktext: tickLabels },
-        yaxis: { ...LAYOUT_BASE.yaxis, title: "Score" }
+        height: 750,
+        margin: { l: 200, r: 30, t: 20, b: 50 },
+        yaxis: {
+          automargin: true,
+          tickfont: { size: 15 },
+          tickmode: "array",
+          tickvals: teams,
+          ticktext: teams.map(t => t === "Belgrano" ? "<b>Belgrano</b>" : t)
+        },
+        xaxis: {
+          title: "Score",
+          titlefont: { size: 15 },
+          tickfont: { size: 13 },
+          rangemode: "tozero"
+        },
+        paper_bgcolor: "#fff",
+        plot_bgcolor: "#fff",
+        showlegend: false
       }, { responsive: true });
 
       // ── Simulador ────────────────────────────────────────────────────────
       data.results.forEach(d => { scoreMap[d.team] = d.score; });
-
-      const teams = basic.map(d => d.team);
       const selLocal  = document.getElementById("sel-local");
       const selVisita = document.getElementById("sel-visita");
       teams.forEach((t, i) => {
