@@ -159,7 +159,7 @@
     .prob-bars {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto 160px auto;
+      grid-template-rows: auto 160px auto auto;
       column-gap: 12px;
       row-gap: 6px;
     }
@@ -197,6 +197,12 @@
       text-align: center;
     }
 
+    .prob-range {
+      font-size: 0.78rem;
+      color: #888;
+      text-align: center;
+    }
+
     @media (max-width: 600px) {
       body { padding: 12px 10px 32px; }
       .chart-div { height: 600px; }
@@ -208,7 +214,8 @@
 </head>
 <body>
 
-<h1>Fútbol Argentino - Torneo Apertura 2026</h1>
+<h1>Fútbol Argentino - Ranking 2026 (Apertura + Clausura)</h1>
+<div class="meta" id="meta"></div>
 
 <!-- Tabs -->
 <div class="tabs">
@@ -223,31 +230,29 @@
        EXPLICACIÓN DEL RANKING — editá el texto entre estas líneas
        ============================================================ -->
 
-   <div class="explicacion"> 
+   <div class="explicacion">
       <p>
-  <h2>¿Quién fue el mejor equipo del fútbol argentino?</h2>
+  <h2>¿Quién es el mejor equipo del fútbol argentino?</h2>
 
-      El formato del torneo presenta algunas particularidades que hacen difícil responder
-      esa pregunta solo mirando quién salió campeón:
+      El fútbol argentino de 2026 se juega en dos torneos consecutivos, Apertura y Clausura,
+      cada uno con su propia fase de grupos (por zonas) seguida de playoffs. Este ranking usa
+      <strong>únicamente los partidos de fase de grupos de ambos torneos</strong>, dejando de
+      lado los playoffs a propósito:
     </p>
     <ul style="margin: 8px 0 0 18px; padding: 0; line-height: 1.75;">
       <li>
-        En la fase de grupos, <strong>no todos los equipos se enfrentan entre sí</strong>.
-        Un equipo puede tener una campaña excelente y quedar eliminado en la siguiente ronda
-        simplemente por el formato del torneo, sin que eso signifique que fue un mal equipo.
+        En la fase de grupos, <strong>no todos los equipos se enfrentan entre sí</strong>
+        (cada uno juega dentro de su zona más algunos cruces interzonales), pero son partidos
+        a 90 minutos, sin alargue ni penales, y con un formato equivalente para todos los
+        equipos — a diferencia de los playoffs, donde avanzar depende de un cruce puntual a
+        eliminación directa.
       </li>
       <li>
-        En sentido contrario, un equipo con una fase inicial floja puede clasificar a la
-        siguiente ronda e incluso <strong>salir campeón ganando por penales</strong>, un
-        resultado que no refleja necesariamente superioridad deportiva dentro de los 90 minutos.
+        El modelo de Bradley-Terry construye un ranking a partir de esos enfrentamientos
+        directos y puede inferir comparaciones indirectas: si A le ganó a B y B le ganó a C,
+        el modelo deduce que A es probablemente mejor que C aunque nunca se hayan enfrentado.
       </li>
     </ul>
-    <p>
-      Más allá del formato, lo que hay es un conjunto de partidos disputados. El modelo de
-      Bradley-Terry construye un ranking a partir de esos enfrentamientos directos y puede
-      inferir comparaciones indirectas: si A le ganó a B y B le ganó a C, el modelo deduce
-      que A es probablemente mejor que C aunque nunca se hayan enfrentado.
-    </p>
     <p>
       Un score más alto no significa que ese equipo siempre vaya a ganar: significa que
       <strong>tiene más probabilidades de ganar</strong>. El resultado de cada partido
@@ -255,7 +260,9 @@
       lo que ocurrió en la cancha.
     </p>
     <p>
-      A continuación, las posiciones según los resultados del Torneo Apertura 2026.
+      El Torneo Apertura 2026 ya terminó su fase de grupos; el Clausura 2026 todavía la está
+      jugando, así que este ranking es <strong>provisorio</strong> y va a seguir cambiando a
+      medida que se disputen más fechas.
     </p>
   </div>
   <!-- ============================================================
@@ -270,21 +277,18 @@
        LECTURA DEL GRÁFICO — editá el texto entre estas líneas
        ============================================================ -->
   <div class="explicacion">
-    <h2>¿Qué concluimos del gráfico?</h2>
+    <h2>¿Cómo se lee el gráfico?</h2>
     <p>
-      <strong>Independiente Rivadavia</strong> quedó como el equipo más fuerte del torneo.
-      Fue el mejor de la primera ronda y quedó eliminado inmediatamente en octavos de final
-      contra Unión. Sin embargo, en un torneo de 20 equipos todos contra todos a una única
-      rueda, Independiente hubiera estado a un par de fechas de salir campeón.
+      Los equipos están ordenados de mayor a menor score (arriba, el más fuerte). La banda
+      horizontal alrededor de cada punto es una <strong>medida de incertidumbre</strong>,
+      calculada por remuestreo bootstrap: muestra el rango donde caería el score de ese equipo
+      si se repitiera el proceso con otra muestra de resultados igual de plausible. Cuando dos
+      equipos tienen bandas que se superponen bastante, la diferencia entre ellos no es
+      estadísticamente muy confiable con los partidos jugados hasta ahora.
     </p>
     <p>
-      Otro equipo destacado fue <strong>Boca</strong>, también eliminado en octavos, esta vez
-      por Huracán en alargue —lo que, al considerarse empate en los 90 minutos, no penalizó
-      su score en el modelo.
-    </p>
-    <p>
-      Mención especial para el campeón: después de todos los partidos jugados,
-      <strong>Belgrano</strong> quedó como el tercer equipo más fuerte del torneo.
+      A medida que el Clausura 2026 juegue más fechas, tanto los scores como estas bandas de
+      incertidumbre se van a ir ajustando.
     </p>
   </div>
   <!-- ============================================================
@@ -301,6 +305,15 @@
       resultado para cualquier enfrentamiento hipotético entre dos equipos. Seleccioná los
       equipos para ver cómo se distribuyen las chances de victoria, empate o derrota según
       lo que el modelo aprendió de los partidos jugados hasta ahora.
+    </p>
+    <p>
+      El porcentaje mostrado <strong>no usa un único score "promedio" por equipo</strong>: se
+      calcula la probabilidad de cada resultado en cada una de las réplicas del bootstrap
+      (usando, en cada réplica, el score que le tocó a cada equipo en <em>esa misma réplica</em>)
+      y se promedia. El rango entre paréntesis debajo de cada porcentaje es el intervalo donde
+      cae esa probabilidad en el 90% de las réplicas — así la incertidumbre sobre la fortaleza
+      de cada equipo queda reflejada también en la probabilidad simulada, no solo en el gráfico
+      de ranking.
     </p>
     <p>
       También se muestran, cuando existieron, los resultados reales entre esos dos equipos
@@ -339,6 +352,9 @@
       <div class="prob-pct" id="pct-local">—</div>
       <div class="prob-pct" id="pct-empate">—</div>
       <div class="prob-pct" id="pct-visita">—</div>
+      <div class="prob-range" id="range-local">—</div>
+      <div class="prob-range" id="range-empate">—</div>
+      <div class="prob-range" id="range-visita">—</div>
     </div>
     <div id="historial" style="margin-top:18px; font-size:0.88rem; color:#444;"></div>
   </div>
@@ -412,6 +428,25 @@
       in paired comparison experiments.</em> Journal of the American Statistical Association,
       65(329), 317–328.
     </p>
+
+    <h3>¿Qué representan las bandas de incertidumbre del gráfico?</h3>
+    <p>
+      Con un número finito de partidos, cualquier score estimado tiene ruido: si algún
+      resultado hubiera sido distinto, el ranking podría cambiar un poco. Para cuantificar eso
+      se usa <strong>bootstrap</strong>: se generan cientos de conjuntos de datos alternativos,
+      igual de plausibles que el real, remuestreando partidos con reemplazo, y se reajusta el
+      modelo en cada uno. La dispersión de los scores obtenidos en esas réplicas es la medida
+      de incertidumbre que se grafica.
+    </p>
+    <p>
+      El remuestreo se hace <strong>equipo por equipo</strong>: para cada equipo se eligen con
+      reemplazo tantos partidos como jugó realmente, tomados de su propia lista de partidos.
+      Esto evita que el bootstrap le dé, por azar, mucho más o mucho menos peso relativo a un
+      equipo según cuántas fechas jugó hasta el momento (algo que sí podría pasar si se
+      remuestreara del conjunto total de partidos sin distinguir equipos) — cada equipo termina
+      aportando, en cada réplica, una cantidad de partidos comparable a la que jugó en la
+      realidad.
+    </p>
   </div>
 
 </div>
@@ -433,20 +468,41 @@
     font: { family: 'Arial, sans-serif', size: 14 }
   };
 
-  let scoreMap  = {};
+  let rawScores = {};   // team -> [score_replica_0, score_replica_1, ...] (bootstrap, modelo básico)
   let matchData = [];
+
+  function quantile(sortedArr, p) {
+    const idx = p * (sortedArr.length - 1);
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if (lo === hi) return sortedArr[lo];
+    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (idx - lo);
+  }
+
+  function outcomeProbs(si, sj) {
+    const Z = Math.exp(si) + Math.exp(sj) + Math.exp(0.5 * (si + sj));
+    return [Math.exp(si) / Z, Math.exp(0.5 * (si + sj)) / Z, Math.exp(sj) / Z];
+  }
 
   function calcProbs() {
     const ti = document.getElementById("sel-local").value;
     const tj = document.getElementById("sel-visita").value;
-    if (!ti || !tj || !(ti in scoreMap) || !(tj in scoreMap)) return;
+    if (!ti || !tj || !(ti in rawScores) || !(tj in rawScores)) return;
 
-    const si = scoreMap[ti];
-    const sj = scoreMap[tj];
-    const Z  = Math.exp(si) + Math.exp(sj) + Math.exp(0.5 * (si + sj));
-    const pi = Math.exp(si) / Z;
-    const pe = Math.exp(0.5 * (si + sj)) / Z;
-    const pj = Math.exp(sj) / Z;
+    // Probabilidad por réplica, usando el par de scores de ESA réplica (no el
+    // score puntual/promedio de cada equipo por separado) para no perder la
+    // incertidumbre ni la correlación entre ambos equipos dentro de la réplica.
+    const scoresI = rawScores[ti], scoresJ = rawScores[tj];
+    const pisLocal = [], pisEmpate = [], pisVisita = [];
+    for (let k = 0; k < scoresI.length; k++) {
+      const [pi, pe, pj] = outcomeProbs(scoresI[k], scoresJ[k]);
+      pisLocal.push(pi); pisEmpate.push(pe); pisVisita.push(pj);
+    }
+    const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const pi = mean(pisLocal), pe = mean(pisEmpate), pj = mean(pisVisita);
+
+    const sortedLocal  = [...pisLocal].sort((a, b) => a - b);
+    const sortedEmpate = [...pisEmpate].sort((a, b) => a - b);
+    const sortedVisita = [...pisVisita].sort((a, b) => a - b);
 
     const maxH = 160;
     const maxP = Math.max(pi, pe, pj);
@@ -461,6 +517,12 @@
     document.getElementById("pct-local").textContent  = (pi * 100).toFixed(1) + "%";
     document.getElementById("pct-empate").textContent = (pe * 100).toFixed(1) + "%";
     document.getElementById("pct-visita").textContent = (pj * 100).toFixed(1) + "%";
+
+    const fmtRange = sorted =>
+      `(${(quantile(sorted, 0.05) * 100).toFixed(0)}%–${(quantile(sorted, 0.95) * 100).toFixed(0)}%)`;
+    document.getElementById("range-local").textContent  = fmtRange(sortedLocal);
+    document.getElementById("range-empate").textContent = fmtRange(sortedEmpate);
+    document.getElementById("range-visita").textContent = fmtRange(sortedVisita);
 
     // Historial de enfrentamientos
     const encontrados = matchData.filter(
@@ -481,14 +543,15 @@
       hist.innerHTML =
         `<strong>Enfrentamientos en el torneo:</strong>` +
         `<ul style="margin:6px 0 0 18px; padding:0;">${filas}</ul>` +
-        `<p style="margin:8px 0 0; font-size:0.8rem; color:#999;">Solo se considera el resultado a los 90 minutos. No se tienen en cuenta alargue ni penales.</p>`;
+        `<p style="margin:8px 0 0; font-size:0.8rem; color:#999;">Incluye solo partidos de fase de grupos (Apertura + Clausura 2026), sin playoffs.</p>`;
     }
   }
 
   Promise.all([
     fetch("data/infered_score.json").then(r => r.json()),
-    fetch("data/results.json").then(r => r.json())
-  ]).then(([data, matches]) => {
+    fetch("data/results.json").then(r => r.json()),
+    fetch("data/bootstrap.json").then(r => r.json())
+  ]).then(([data, matches, boot]) => {
     matchData = matches;
 
       // ── Gráfico: Área rellena horizontal (mayor score arriba) ────────────
@@ -496,6 +559,8 @@
       const offset = basic[0].score;
       const teams  = basic.map(d => d.team);
       const scores = basic.map(d => d.score - offset);
+      const errPlus  = teams.map(t => boot.results[t].p95 - boot.results[t].mean);
+      const errMinus = teams.map(t => boot.results[t].mean - boot.results[t].p5);
 
       Plotly.newPlot("chart-basico", [{
         y: teams,
@@ -506,6 +571,15 @@
         fillcolor: "rgba(26, 86, 219, 0.18)",
         line: { color: BLUE, width: 2.5, shape: "linear" },
         marker: { size: 8, color: BLUE },
+        error_x: {
+          type: "data",
+          symmetric: false,
+          array: errPlus,
+          arrayminus: errMinus,
+          color: "rgba(26, 86, 219, 0.45)",
+          thickness: 1.5,
+          width: 3
+        },
         hovertemplate: "<b>%{y}</b><br>Score: %{x:.3f}<extra></extra>"
       }], {
         ...LAYOUT_BASE,
@@ -516,7 +590,7 @@
           tickfont: { size: 15 },
           tickmode: "array",
           tickvals: teams,
-          ticktext: teams.map(t => t === "Belgrano" ? "<b>Belgrano</b>" : t)
+          ticktext: teams
         },
         xaxis: {
           title: "Score",
@@ -530,7 +604,7 @@
       }, { responsive: true, staticPlot: true });
 
       // ── Simulador ────────────────────────────────────────────────────────
-      data.results.forEach(d => { scoreMap[d.team] = d.score; });
+      rawScores = boot.raw_scores;
       const selLocal  = document.getElementById("sel-local");
       const selVisita = document.getElementById("sel-visita");
       [...teams].reverse().forEach(t => {
@@ -541,6 +615,13 @@
       selLocal.value  = teams[0];
       selVisita.value = teams[1];
       calcProbs();
+
+      // ── Metadata ─────────────────────────────────────────────────────────
+      const generado = data.metadata && data.metadata.date_of_creation
+        ? data.metadata.date_of_creation.slice(0, 16)
+        : "";
+      document.getElementById("meta").innerText =
+        `Datos actualizados al ${generado} · Torneo Clausura 2026 en curso — el ranking es provisorio.`;
 
   }).catch(err => {
     console.error("Error cargando datos:", err);
