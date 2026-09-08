@@ -34,8 +34,6 @@ docs/index.html                       reads all three JSON files via fetch() and
   review the diff on `data/matches_*.json`, then push (which triggers CI to refit).
 - `src/build_site_data.py` is idempotent: rerun it after editing `data/matches_*.json` to refresh all
   three `docs/data/*.json` outputs.
-- `TorneoArgentino.ipynb` is the original exploratory notebook the pipeline was extracted from (predates
-  the Wikipedia source and the package split). Not kept in sync — treat `src/` as the source of truth.
 
 ## Data source: Wikipedia, not the league's own site
 
@@ -117,19 +115,34 @@ Single self-contained HTML file (no build step, no bundler) using Plotly via CDN
 When editing this file, changes are purely client-side JS/HTML/CSS edits — reload the page (served,
 not `file://`) to verify.
 
-## Commands
+## Running the full pipeline
+
+All commands below must be run from the **repo root** (they use `python -m`, which needs `src/` importable
+as a package from the current directory — running `python src/build_site_data.py` directly, or running
+from any other directory, fails with `ModuleNotFoundError`).
 
 ```bash
-pip install -r requirements.txt        # numpy, scipy, requests, beautifulsoup4
+# 0. One-time setup
+pip install -r requirements.txt          # numpy, scipy, requests, beautifulsoup4
 
-python -m src.scraping.wikipedia_source   # manual step: re-scrapes both Wikipedia "Anexo" pages,
-                                           # overwrites data/matches_apertura_2026.json and
-                                           # data/matches_clausura_2026.json
+# 1. Scrape fresh match data (manual step — see "Pipeline / data flow" above for why).
+#    Overwrites data/matches_apertura_2026.json and data/matches_clausura_2026.json.
+#    Safe to skip if you only want to recompute the model on already-scraped data.
+python -m src.scraping.wikipedia_source
 
-python -m src.build_site_data             # fits both models + runs the bootstrap (~500 replicas,
-                                           # ~1 min), writes all three docs/data/*.json files
-                                           # (this is what CI runs — run it after editing data/matches_*.json)
+# 2. Fit both Bradley-Terry models + run the bootstrap (~500 replicas, ~1 min).
+#    Overwrites docs/data/infered_score.json, docs/data/bootstrap.json, docs/data/results.json.
+#    This is the step GitHub Actions runs automatically on push — run it locally whenever you
+#    want to preview the result before committing, or after editing data/matches_*.json by hand.
+python -m src.build_site_data
+
+# 3. (optional) Preview the site locally — docs/index.html uses relative fetch() paths, so it
+#    must be served, not opened as a file:// URL.
+cd docs && python3 -m http.server 8000   # then open http://localhost:8000
 ```
+
+Step 1 + step 2 together is "update everything from scratch". If you only touched `src/modeling/` or
+`src/uncertainty/` (no new match data), just step 2 is enough.
 
 There is no test suite, linter, or build step in this repo.
 
