@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Torneo Argentino – Ranking Bradley-Terry</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -203,9 +204,61 @@
       text-align: center;
     }
 
+    /* ── Red de resultados ── */
+    .cy-container {
+      height: 650px;
+      position: relative;
+    }
+
+    .legend-row {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.82rem;
+      color: #555;
+      margin: 4px 4px 14px;
+    }
+
+    .legend-swatch {
+      display: inline-block;
+      width: 22px;
+      border-top: 2px solid #aab8cc;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+
+    .legend-swatch.draw {
+      border-top-style: dashed;
+      border-top-color: #aab0c0;
+    }
+
+    #cy-pair-a, #cy-pair-b {
+      padding: 3px 6px;
+      border: 1px solid #c8cdd8;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: #222;
+      background: #f7f8fa;
+      cursor: pointer;
+    }
+
+    .red-info {
+      font-size: 0.92rem;
+      color: #333;
+      padding: 10px 4px 2px;
+      min-height: 1.4em;
+    }
+
+    .red-comparison table th, .red-comparison table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #eceff3;
+    }
+
     @media (max-width: 600px) {
       body { padding: 12px 10px 32px; }
       .chart-div { height: 600px; }
+      .cy-container { height: 480px; }
       .tab-btn { padding: 8px 12px; font-size: 0.85rem; }
       .selector-row { flex-direction: column; align-items: flex-start; }
       .prob-bar { width: 90%; }
@@ -220,6 +273,7 @@
 <!-- Tabs -->
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('ranking', this)">Ranking</button>
+  <button class="tab-btn"        onclick="showTab('red', this)">Red de resultados</button>
   <button class="tab-btn"        onclick="showTab('detalle', this)">Detalles matemáticos</button>
 </div>
 
@@ -361,6 +415,71 @@
 
 </div>
 
+<!-- ── Panel: Red de resultados ── -->
+<div class="tab-panel" id="tab-red">
+
+  <div class="explicacion">
+    <h2>El torneo como red dirigida</h2>
+    <p>
+      Cada equipo es un nodo. Cada partido decisivo agrega una <strong>arista dirigida del equipo
+      perdedor hacia el equipo ganador</strong> — así, el <em>in-degree</em> de un nodo (cuántas
+      flechas le apuntan) es directamente su cantidad de victorias. Como cada par de equipos se
+      enfrenta como máximo dos veces (una vez por torneo), puede haber hasta dos aristas entre los
+      mismos dos nodos.
+    </p>
+    <p>
+      Los <strong>empates</strong> no encajan en la idea de "quién domina a quién", así que se
+      dibujan distinto: una línea punteada y sin flecha entre los dos equipos, en vez de una
+      victoria más. Para el cálculo de las métricas de la red sí se los tiene en cuenta, aportando
+      medio punto a cada equipo en cada sentido — el mismo tratamiento simétrico que ya le da el
+      modelo Bradley-Terry al empate (ver pestaña "Detalles matemáticos").
+    </p>
+    <p>
+      El <strong>tamaño de cada nodo</strong> refleja su in-degree ponderado (victorias + medio
+      punto por empate — el clásico sistema de puntos del fútbol). El <strong>color</strong> refleja
+      su <strong>PageRank</strong>: la generalización de "eigenvector centrality" a redes dirigidas,
+      que no exige que la red esté completamente conectada. Un equipo tiene PageRank alto si le ganó
+      a equipos que, a su vez, le ganaron a otros equipos fuertes — la misma idea recursiva de
+      fortaleza que Bradley-Terry estima por otro camino (optimizando una verosimilitud en vez de
+      analizar la topología de la red), lo que la vuelve una buena forma de contrastar el ranking
+      estadístico contra la evidencia "cruda" de la red de resultados. El diseño ubica en el centro
+      a los equipos de mayor PageRank y hacia afuera a los de menor.
+    </p>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">Quién le ganó a quién (Apertura + Clausura 2026, fase de grupos)</div>
+    <div class="legend-row">
+      <span><span class="legend-swatch"></span>Victoria (apunta al ganador)</span>
+      <span><span class="legend-swatch draw"></span>Empate</span>
+      <span>Tamaño del nodo = in-degree ponderado &nbsp;·&nbsp; Color = PageRank</span>
+    </div>
+    <div class="legend-row" style="margin-top:-6px;">
+      <label for="cy-pair-a" style="color:#555;">Aislar cruce:</label>
+      <select id="cy-pair-a" onchange="updatePairIsolation()"></select>
+      <span class="vs-label" style="font-size:0.85rem;">vs</span>
+      <select id="cy-pair-b" onchange="updatePairIsolation()"></select>
+      <button type="button" id="cy-pair-clear" onclick="clearPairIsolation()"
+              style="padding:3px 9px; border:1px solid #c8cdd8; border-radius:4px; background:#f7f8fa; color:#555; font-size:0.82rem; cursor:pointer;">
+        Ver todos
+      </button>
+    </div>
+    <div class="cy-container" id="cy"></div>
+    <div class="red-info" id="red-info">Pasá el mouse (o tocá) un equipo para ver su detalle, o elegí un par arriba para aislar su cruce.</div>
+  </div>
+
+  <div class="chart-box red-comparison">
+    <div class="chart-title">PageRank vs. score Bradley-Terry</div>
+    <p style="font-size:0.85rem; color:#666; margin: 0 0 10px;">
+      Dos rankings calculados de formas completamente distintas a partir de los mismos partidos.
+      Que coincidan bastante es una buena señal; donde difieren, vale la pena mirar con qué equipos
+      se cruzó cada uno.
+    </p>
+    <div id="red-comparison-table"></div>
+  </div>
+
+</div>
+
 <!-- ── Panel: Detalles matemáticos ── -->
 <div class="tab-panel" id="tab-detalle">
 
@@ -458,6 +577,10 @@
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
     window.dispatchEvent(new Event('resize'));
+    if (name === 'red') {
+      renderNetworkIfNeeded();
+      if (cyInstance) { cyInstance.resize(); cyInstance.fit(); }
+    }
   }
 
   const BLUE = '#1a56db';
@@ -470,6 +593,16 @@
 
   let rawScores = {};   // team -> [score_replica_0, score_replica_1, ...] (bootstrap, modelo básico)
   let matchData = [];
+  let networkDataGlobal = null;
+  let cyInstance = null;
+  let networkRendered = false;
+  let pairModeActive = false;
+
+  function fmtSeason(s) {
+    if (!s) return "";
+    const nombre = s.startsWith("apertura") ? "Apertura" : s.startsWith("clausura") ? "Clausura" : s;
+    return nombre + " " + s.replace(/\D/g, "");
+  }
 
   function quantile(sortedArr, p) {
     const idx = p * (sortedArr.length - 1);
@@ -547,12 +680,190 @@
     }
   }
 
+  // ── Red de resultados (Cytoscape) ─────────────────────────────────────
+  // Layout de fuerzas ('cose'): nodos muy conectados entre sí quedan cerca, sin imponer una
+  // posición según ninguna métrica en particular. Repulsión alta + gravedad baja para separar
+  // bien los nodos y dejar que se noten las comunidades (equipos que se cruzan mucho entre sí
+  // — típicamente los de una misma zona del torneo — quedan agrupados).
+  const NETWORK_LAYOUT = {
+    name: 'cose',
+    animate: false,
+    padding: 30,
+    nodeDimensionsIncludeLabels: true,
+    nodeRepulsion: () => 16000,
+    idealEdgeLength: () => 110,
+    edgeElasticity: () => 90,
+    gravity: 0.15,
+    numIter: 2000,
+    coolingFactor: 0.98,
+    minTemp: 1.0
+  };
+
+  function renderNetworkIfNeeded() {
+    if (networkRendered || !networkDataGlobal) return;
+    networkRendered = true;
+    buildCytoscape(networkDataGlobal);
+  }
+
+  function buildCytoscape(net) {
+    const nodesByTeam = {};
+    net.nodes.forEach(n => { nodesByTeam[n.team] = n; });
+
+    const indegs = net.nodes.map(n => n.weighted_indegree);
+    const pranks = net.nodes.map(n => n.pagerank);
+    const minIndeg = Math.min(...indegs), maxIndeg = Math.max(...indegs);
+    const minPr = Math.min(...pranks), maxPr = Math.max(...pranks);
+
+    const nodeSize = n => {
+      const t = maxIndeg > minIndeg ? (n.weighted_indegree - minIndeg) / (maxIndeg - minIndeg) : 0.5;
+      return 14 + t * 26;
+    };
+    const nodeColor = n => {
+      const t = maxPr > minPr ? (n.pagerank - minPr) / (maxPr - minPr) : 0.5;
+      const c0 = [198, 214, 245], c1 = [15, 45, 125];
+      const rgb = c0.map((v, i) => Math.round(v + (c1[i] - v) * t));
+      return `rgb(${rgb.join(',')})`;
+    };
+
+    const elements = net.nodes.map(n => ({
+      data: { id: n.team, label: n.team, size: nodeSize(n), color: nodeColor(n), pagerank: n.pagerank }
+    })).concat(net.edges.map((e, idx) => ({
+      data: { id: 'e' + idx, source: e.source, target: e.target, type: e.type }
+    })));
+
+    cyInstance = cytoscape({
+      container: document.getElementById('cy'),
+      elements: elements,
+      style: [
+        { selector: 'node', style: {
+            'width': 'data(size)', 'height': 'data(size)',
+            'background-color': 'data(color)',
+            'label': 'data(label)', 'font-size': 9, 'color': '#333',
+            'text-valign': 'bottom', 'text-margin-y': 4,
+            'border-width': 1, 'border-color': '#fff'
+        } },
+        { selector: 'edge[type = "win"]', style: {
+            'width': 1.3, 'line-color': '#aab8cc', 'target-arrow-color': '#aab8cc',
+            'target-arrow-shape': 'triangle', 'arrow-scale': 0.9,
+            'curve-style': 'bezier', 'opacity': 0.55
+        } },
+        { selector: 'edge[type = "draw"]', style: {
+            'width': 1.3, 'line-color': '#aab0c0', 'line-style': 'dashed',
+            'target-arrow-shape': 'none', 'curve-style': 'bezier', 'opacity': 0.4
+        } },
+        { selector: '.faded', style: { 'opacity': 0.06 } },
+        { selector: '.highlighted', style: { 'opacity': 1 } }
+      ],
+      layout: NETWORK_LAYOUT,
+      wheelSensitivity: 0.25
+    });
+
+    const info = document.getElementById('red-info');
+    const teamStats = n =>
+      `${n.wins}V ${n.draws}E ${n.losses}D &nbsp;·&nbsp; in-degree ponderado: ${n.weighted_indegree.toFixed(1)}` +
+      ` &nbsp;·&nbsp; PageRank: ${(n.pagerank * 100).toFixed(2)}% &nbsp;·&nbsp; score BT: ${n.bt_score.toFixed(3)}`;
+
+    const showInfo = team => {
+      const n = nodesByTeam[team];
+      info.innerHTML = `<strong>${team}</strong> — ${teamStats(n)}`;
+    };
+
+    cyInstance.on('tap mouseover', 'node', evt => {
+      if (pairModeActive) return;
+      const node = evt.target;
+      showInfo(node.id());
+      cyInstance.elements().addClass('faded');
+      node.removeClass('faded').addClass('highlighted');
+      node.connectedEdges().removeClass('faded').addClass('highlighted');
+      node.connectedEdges().connectedNodes().removeClass('faded');
+    });
+    cyInstance.on('mouseout', 'node', () => {
+      if (pairModeActive) return;
+      cyInstance.elements().removeClass('faded').removeClass('highlighted');
+    });
+    cyInstance.on('tap', evt => {
+      if (evt.target === cyInstance) {
+        clearPairIsolation();
+        cyInstance.elements().removeClass('faded').removeClass('highlighted');
+        info.innerHTML = 'Pasá el mouse (o tocá) un equipo para ver su detalle, o elegí un par arriba para aislar su cruce.';
+      }
+    });
+
+    // ── Aislar el cruce entre dos equipos elegidos ────────────────────────
+    const selA = document.getElementById('cy-pair-a');
+    const selB = document.getElementById('cy-pair-b');
+    [selA, selB].forEach(sel => {
+      sel.add(new Option('—', ''));
+      [...net.nodes].sort((a, b) => a.team.localeCompare(b.team)).forEach(n => {
+        sel.add(new Option(n.team, n.team));
+      });
+    });
+
+    window.updatePairIsolation = () => {
+      const a = selA.value, b = selB.value;
+      if (!a || !b || a === b) {
+        pairModeActive = false;
+        cyInstance.elements().removeClass('faded').removeClass('highlighted');
+        info.innerHTML = (a && b && a === b)
+          ? 'Elegí dos equipos distintos para aislar su cruce.'
+          : 'Pasá el mouse (o tocá) un equipo para ver su detalle, o elegí un par arriba para aislar su cruce.';
+        return;
+      }
+      pairModeActive = true;
+      const nodeA = cyInstance.$id(a), nodeB = cyInstance.$id(b);
+      const edgesBetween = nodeA.edgesWith(nodeB);
+      cyInstance.elements().addClass('faded').removeClass('highlighted');
+      nodeA.union(nodeB).union(edgesBetween).removeClass('faded').addClass('highlighted');
+
+      const relevant = net.edges.filter(e =>
+        (e.source === a && e.target === b) || (e.source === b && e.target === a));
+      let historial;
+      if (relevant.length === 0) {
+        historial = '<em>Nunca se enfrentaron en la fase de grupos.</em>';
+      } else {
+        historial = relevant.map(e => {
+          const resultado = e.type === 'draw' ? 'empate' : `ganó <strong>${e.target}</strong>`;
+          return `<li>${fmtSeason(e.season)} (${e.zona}): ${resultado}</li>`;
+        }).join('');
+        historial = `<ul style="margin:4px 0 0 18px; padding:0;">${historial}</ul>`;
+      }
+      info.innerHTML =
+        `<strong>${a}</strong> — ${teamStats(nodesByTeam[a])}<br>` +
+        `<strong>${b}</strong> — ${teamStats(nodesByTeam[b])}<br>` +
+        historial;
+    };
+
+    window.clearPairIsolation = () => {
+      selA.value = '';
+      selB.value = '';
+      window.updatePairIsolation();
+    };
+
+    // Comparación PageRank vs Bradley-Terry
+    const byPr = [...net.nodes].sort((a, b) => b.pagerank - a.pagerank);
+    const byBt = [...net.nodes].sort((a, b) => b.bt_score - a.bt_score);
+    const rows = byPr.map((n, i) =>
+      `<tr><td>${i + 1}</td><td>${n.team}</td><td>${byBt[i].team}</td></tr>`
+    ).join('');
+    document.getElementById('red-comparison-table').innerHTML =
+      `<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+         <thead><tr>
+           <th style="text-align:left;">#</th>
+           <th style="text-align:left;">Por PageRank</th>
+           <th style="text-align:left;">Por score Bradley-Terry</th>
+         </tr></thead>
+         <tbody>${rows}</tbody>
+       </table>`;
+  }
+
   Promise.all([
     fetch("data/infered_score.json").then(r => r.json()),
     fetch("data/results.json").then(r => r.json()),
-    fetch("data/bootstrap.json").then(r => r.json())
-  ]).then(([data, matches, boot]) => {
+    fetch("data/bootstrap.json").then(r => r.json()),
+    fetch("data/network.json").then(r => r.json())
+  ]).then(([data, matches, boot, net]) => {
     matchData = matches;
+    networkDataGlobal = net;
 
       // ── Gráfico: Área rellena horizontal (mayor score arriba) ────────────
       const basic = [...data.results].sort((a, b) => a.score - b.score);

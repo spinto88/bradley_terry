@@ -2,6 +2,7 @@ from datetime import datetime
 
 from .config import (
     BOOTSTRAP_PATH,
+    NETWORK_PATH,
     RESULTS_COPY_PATH,
     SCORES_PATH,
     as_bt_tuples,
@@ -9,6 +10,7 @@ from .config import (
     write_json,
 )
 from .modeling.infer import infer_scores
+from .network.graph_metrics import compute_network_data
 from .uncertainty.bootstrap import run_bootstrap
 
 
@@ -27,6 +29,9 @@ def main():
     write_json(BOOTSTRAP_PATH, bootstrap_summary)
 
     write_json(RESULTS_COPY_PATH, matches)
+
+    network_data = compute_network_data(matches_dicts, results_basic)
+    write_json(NETWORK_PATH, network_data)
 
     print(f"Done. {len(results_basic)} equipos procesados, {len(matches)} partidos combinados.")
 
