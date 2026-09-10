@@ -14,6 +14,7 @@ SCORES_PATH = DOCS_DATA_DIR / "infered_score.json"
 BOOTSTRAP_PATH = DOCS_DATA_DIR / "bootstrap.json"
 RESULTS_COPY_PATH = DOCS_DATA_DIR / "results.json"
 NETWORK_PATH = DOCS_DATA_DIR / "network.json"
+STANDINGS_PATH = DOCS_DATA_DIR / "standings.json"
 
 
 def load_all_matches(files=MATCH_FILES):

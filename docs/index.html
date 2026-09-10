@@ -244,7 +244,7 @@
       min-height: 1.4em;
     }
 
-    .red-comparison table th, .red-comparison table td {
+    .rank-table-box table th, .rank-table-box table td {
       padding: 4px 8px;
       border-bottom: 1px solid #eceff3;
     }
@@ -343,6 +343,26 @@
   <!-- ============================================================
        FIN LECTURA DEL GRÁFICO
        ============================================================ -->
+
+  <div class="chart-box rank-table-box">
+    <div class="chart-title">Ranking del modelo vs. Tabla anual</div>
+    <p style="font-size:0.85rem; color:#666; margin: 0 0 10px;">
+      La Tabla anual (puntos: victoria 3, empate 1, derrota 0, sobre la fase de grupos de
+      ambos torneos combinada) no tiene en cuenta la fuerza de los rivales enfrentados — dos equipos
+      con los mismos puntos pueden haber jugado calendarios muy distintos. El modelo Bradley-Terry sí
+      la tiene en cuenta, así que las diferencias entre ambos rankings suelen venir de ahí.
+    </p>
+    <p style="font-size:0.8rem; color:#888; margin: 0 0 4px;">
+      <a href="https://canchallena.lanacion.com.ar/futbol/tabla-anual/" target="_blank" rel="noopener">Ver la Tabla anual oficial ↗</a>
+    </p>
+    <p style="font-size:0.8rem; color:#888; margin: 0 0 10px;">
+      Fuente de los partidos (para chequear los datos): Wikipedia —
+      <a href="https://es.wikipedia.org/wiki/Anexo:Torneo_Apertura_2026_(Argentina)" target="_blank" rel="noopener">Apertura 2026</a>
+      ·
+      <a href="https://es.wikipedia.org/wiki/Anexo:Torneo_Clausura_2026_(Argentina)" target="_blank" rel="noopener">Clausura 2026</a>
+    </p>
+    <div id="bt-tabla-comparison-table"></div>
+  </div>
 
   <!-- ============================================================
        EXPLICACIÓN DEL SIMULADOR — editá el texto entre estas líneas
@@ -461,12 +481,21 @@
     <div class="red-info" id="red-info">Pasá el mouse (o tocá) un equipo para ver su detalle, o elegí un par arriba para aislar su cruce.</div>
   </div>
 
-  <div class="chart-box red-comparison">
-    <div class="chart-title">PageRank vs. score Bradley-Terry</div>
+  <div class="chart-box rank-table-box">
+    <div class="chart-title">PageRank vs. score Bradley-Terry vs. Tabla anual</div>
     <p style="font-size:0.85rem; color:#666; margin: 0 0 10px;">
-      Dos rankings calculados de formas completamente distintas a partir de los mismos partidos.
+      Tres rankings calculados de formas completamente distintas a partir de los mismos partidos.
       Que coincidan bastante es una buena señal; donde difieren, vale la pena mirar con qué equipos
       se cruzó cada uno.
+    </p>
+    <p style="font-size:0.8rem; color:#888; margin: 0 0 4px;">
+      <a href="https://canchallena.lanacion.com.ar/futbol/tabla-anual/" target="_blank" rel="noopener">Ver la Tabla anual oficial ↗</a>
+    </p>
+    <p style="font-size:0.8rem; color:#888; margin: 0 0 10px;">
+      Fuente de los partidos (para chequear los datos): Wikipedia —
+      <a href="https://es.wikipedia.org/wiki/Anexo:Torneo_Apertura_2026_(Argentina)" target="_blank" rel="noopener">Apertura 2026</a>
+      ·
+      <a href="https://es.wikipedia.org/wiki/Anexo:Torneo_Clausura_2026_(Argentina)" target="_blank" rel="noopener">Clausura 2026</a>
     </p>
     <div id="red-comparison-table"></div>
   </div>
@@ -587,6 +616,7 @@
   let rawScores = {};   // team -> [score_replica_0, score_replica_1, ...] (bootstrap, modelo básico)
   let matchData = [];
   let networkDataGlobal = null;
+  let standingsGlobal = null;
   let cyInstance = null;
   let networkRendered = false;
   let pairModeActive = false;
@@ -595,6 +625,23 @@
     if (!s) return "";
     const nombre = s.startsWith("apertura") ? "Apertura" : s.startsWith("clausura") ? "Clausura" : s;
     return nombre + " " + s.replace(/\D/g, "");
+  }
+
+  // Tabla de # + una columna por criterio de ranking; todas las listas de equipos deben venir
+  // ya ordenadas (mejor primero) y tener el mismo largo.
+  function renderRankTable(containerId, columns) {
+    const n = columns[0].teams.length;
+    const head = columns.map(c => `<th style="text-align:left;">${c.label}</th>`).join('');
+    let rows = '';
+    for (let i = 0; i < n; i++) {
+      rows += `<tr><td>${i + 1}</td>` +
+        columns.map(c => `<td>${c.teams[i]}</td>`).join('') + `</tr>`;
+    }
+    document.getElementById(containerId).innerHTML =
+      `<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+         <thead><tr><th style="text-align:left;">#</th>${head}</tr></thead>
+         <tbody>${rows}</tbody>
+       </table>`;
   }
 
   function outcomeProbs(si, sj) {
@@ -815,31 +862,24 @@
       window.updatePairIsolation();
     };
 
-    // Comparación PageRank vs Bradley-Terry
-    const byPr = [...net.nodes].sort((a, b) => b.pagerank - a.pagerank);
-    const byBt = [...net.nodes].sort((a, b) => b.bt_score - a.bt_score);
-    const rows = byPr.map((n, i) =>
-      `<tr><td>${i + 1}</td><td>${n.team}</td><td>${byBt[i].team}</td></tr>`
-    ).join('');
-    document.getElementById('red-comparison-table').innerHTML =
-      `<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
-         <thead><tr>
-           <th style="text-align:left;">#</th>
-           <th style="text-align:left;">Por PageRank</th>
-           <th style="text-align:left;">Por score Bradley-Terry</th>
-         </tr></thead>
-         <tbody>${rows}</tbody>
-       </table>`;
+    // Comparación PageRank vs Bradley-Terry vs Tabla anual
+    renderRankTable('red-comparison-table', [
+      { label: 'Por PageRank', teams: [...net.nodes].sort((a, b) => b.pagerank - a.pagerank).map(n => n.team) },
+      { label: 'Por score Bradley-Terry', teams: [...net.nodes].sort((a, b) => b.bt_score - a.bt_score).map(n => n.team) },
+      { label: 'Por Tabla anual', teams: standingsGlobal.table.map(r => r.team) }
+    ]);
   }
 
   Promise.all([
     fetch("data/infered_score.json").then(r => r.json()),
     fetch("data/results.json").then(r => r.json()),
     fetch("data/bootstrap.json").then(r => r.json()),
-    fetch("data/network.json").then(r => r.json())
-  ]).then(([data, matches, boot, net]) => {
+    fetch("data/network.json").then(r => r.json()),
+    fetch("data/standings.json").then(r => r.json())
+  ]).then(([data, matches, boot, net, standings]) => {
     matchData = matches;
     networkDataGlobal = net;
+    standingsGlobal = standings;
 
       // ── Gráfico: Área rellena horizontal (mayor score arriba) ────────────
       const basic = [...data.results].sort((a, b) => a.score - b.score);
@@ -889,6 +929,12 @@
         plot_bgcolor: "#fff",
         showlegend: false
       }, { responsive: true, staticPlot: true });
+
+      // ── Comparación: ranking Bradley-Terry vs. Tabla anual ────────────────
+      renderRankTable('bt-tabla-comparison-table', [
+        { label: 'Por score Bradley-Terry', teams: [...teams].reverse() },
+        { label: 'Por Tabla anual', teams: standings.table.map(r => r.team) }
+      ]);
 
       // ── Simulador ────────────────────────────────────────────────────────
       rawScores = boot.raw_scores;

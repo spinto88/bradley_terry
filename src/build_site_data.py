@@ -5,12 +5,14 @@ from .config import (
     NETWORK_PATH,
     RESULTS_COPY_PATH,
     SCORES_PATH,
+    STANDINGS_PATH,
     as_bt_tuples,
     load_all_matches,
     write_json,
 )
 from .modeling.infer import infer_scores
 from .network.graph_metrics import compute_network_data
+from .standings.table import compute_standings
 from .uncertainty.bootstrap import run_bootstrap
 
 
@@ -32,6 +34,8 @@ def main():
 
     network_data = compute_network_data(matches_dicts, results_basic)
     write_json(NETWORK_PATH, network_data)
+
+    write_json(STANDINGS_PATH, compute_standings(matches_dicts))
 
     print(f"Done. {len(results_basic)} equipos procesados, {len(matches)} partidos combinados.")
 
