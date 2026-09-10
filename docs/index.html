@@ -160,7 +160,7 @@
     .prob-bars {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto 160px auto auto;
+      grid-template-rows: auto 160px auto;
       column-gap: 12px;
       row-gap: 6px;
     }
@@ -195,12 +195,6 @@
       font-size: 1.05rem;
       font-weight: bold;
       color: #222;
-      text-align: center;
-    }
-
-    .prob-range {
-      font-size: 0.78rem;
-      color: #888;
       text-align: center;
     }
 
@@ -335,10 +329,11 @@
     <p>
       Los equipos están ordenados de mayor a menor score (arriba, el más fuerte). La banda
       horizontal alrededor de cada punto es una <strong>medida de incertidumbre</strong>,
-      calculada por remuestreo bootstrap: muestra el rango donde caería el score de ese equipo
-      si se repitiera el proceso con otra muestra de resultados igual de plausible. Cuando dos
-      equipos tienen bandas que se superponen bastante, la diferencia entre ellos no es
-      estadísticamente muy confiable con los partidos jugados hasta ahora.
+      calculada por remuestreo bootstrap: es el <strong>intervalo del 90% central</strong> (entre
+      los percentiles 5 y 95 de las réplicas) donde caería el score de ese equipo si se repitiera
+      el proceso con otra muestra de resultados igual de plausible. Cuando dos equipos tienen
+      bandas que se superponen bastante, la diferencia entre ellos no es estadísticamente muy
+      confiable con los partidos jugados hasta ahora.
     </p>
     <p>
       A medida que el Clausura 2026 juegue más fechas, tanto los scores como estas bandas de
@@ -362,12 +357,13 @@
     </p>
     <p>
       El porcentaje mostrado <strong>no usa un único score "promedio" por equipo</strong>: se
-      calcula la probabilidad de cada resultado en cada una de las réplicas del bootstrap
+      calcula la probabilidad de cada resultado en cada una de las 500 réplicas del bootstrap
       (usando, en cada réplica, el score que le tocó a cada equipo en <em>esa misma réplica</em>)
-      y se promedia. El rango entre paréntesis debajo de cada porcentaje es el intervalo donde
-      cae esa probabilidad en el 90% de las réplicas — así la incertidumbre sobre la fortaleza
-      de cada equipo queda reflejada también en la probabilidad simulada, no solo en el gráfico
-      de ranking.
+      y recién ahí se promedian esas 500 probabilidades en el número final. Como la fórmula de
+      probabilidad no es lineal, ese promedio da un resultado distinto (y correcto) al que daría
+      calcular la probabilidad directamente con el score promedio de cada equipo — así la
+      incertidumbre sobre la fortaleza de cada equipo queda incorporada en el porcentaje mismo, y
+      no hace falta mostrarla aparte como un rango.
     </p>
     <p>
       También se muestran, cuando existieron, los resultados reales entre esos dos equipos
@@ -406,9 +402,6 @@
       <div class="prob-pct" id="pct-local">—</div>
       <div class="prob-pct" id="pct-empate">—</div>
       <div class="prob-pct" id="pct-visita">—</div>
-      <div class="prob-range" id="range-local">—</div>
-      <div class="prob-range" id="range-empate">—</div>
-      <div class="prob-range" id="range-visita">—</div>
     </div>
     <div id="historial" style="margin-top:18px; font-size:0.88rem; color:#444;"></div>
   </div>
@@ -604,13 +597,6 @@
     return nombre + " " + s.replace(/\D/g, "");
   }
 
-  function quantile(sortedArr, p) {
-    const idx = p * (sortedArr.length - 1);
-    const lo = Math.floor(idx), hi = Math.ceil(idx);
-    if (lo === hi) return sortedArr[lo];
-    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (idx - lo);
-  }
-
   function outcomeProbs(si, sj) {
     const Z = Math.exp(si) + Math.exp(sj) + Math.exp(0.5 * (si + sj));
     return [Math.exp(si) / Z, Math.exp(0.5 * (si + sj)) / Z, Math.exp(sj) / Z];
@@ -633,10 +619,6 @@
     const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
     const pi = mean(pisLocal), pe = mean(pisEmpate), pj = mean(pisVisita);
 
-    const sortedLocal  = [...pisLocal].sort((a, b) => a - b);
-    const sortedEmpate = [...pisEmpate].sort((a, b) => a - b);
-    const sortedVisita = [...pisVisita].sort((a, b) => a - b);
-
     const maxH = 160;
     const maxP = Math.max(pi, pe, pj);
 
@@ -650,12 +632,6 @@
     document.getElementById("pct-local").textContent  = (pi * 100).toFixed(1) + "%";
     document.getElementById("pct-empate").textContent = (pe * 100).toFixed(1) + "%";
     document.getElementById("pct-visita").textContent = (pj * 100).toFixed(1) + "%";
-
-    const fmtRange = sorted =>
-      `(${(quantile(sorted, 0.05) * 100).toFixed(0)}%–${(quantile(sorted, 0.95) * 100).toFixed(0)}%)`;
-    document.getElementById("range-local").textContent  = fmtRange(sortedLocal);
-    document.getElementById("range-empate").textContent = fmtRange(sortedEmpate);
-    document.getElementById("range-visita").textContent = fmtRange(sortedVisita);
 
     // Historial de enfrentamientos
     const encontrados = matchData.filter(
